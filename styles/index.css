@@ -1,0 +1,28 @@
+/*
+blue: #4F7CAC
+mint green: #c0e0de
+jet black: #162521
+grey: #3C474B
+cyan: #9EEFE5
+*/
+
+body {
+    margin: 0;
+    background-color: #162521;
+    font-family: monospace;
+}
+
+canvas {
+    border:10px solid black;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top:5%;
+}
+
+#level {
+    text-align: center;
+    color: white;
+    letter-spacing: 8px;
+    margin-top:50px;
+}

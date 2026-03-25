@@ -1,0 +1,3 @@
+player changes color depending on health
+abilities slowly given
+player copy slightly opaque
