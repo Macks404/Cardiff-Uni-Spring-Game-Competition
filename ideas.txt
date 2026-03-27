@@ -1,3 +1,5 @@
 player changes color depending on health
 abilities slowly given
 player copy slightly opaque
+limited amount of copies
+optimise only count movement ever 10 ticks

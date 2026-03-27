@@ -20,7 +20,7 @@ canvas {
     margin-top:5%;
 }
 
-#level {
+#level, #recordingMovement {
     text-align: center;
     color: white;
     letter-spacing: 8px;
