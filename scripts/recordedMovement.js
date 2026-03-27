@@ -5,7 +5,7 @@ class RecordedMovement {
         this.origin = {x:origin.x-1,y:origin.y-1};
         this.recordedVelocities = [];
         this.tickStartedReplaying = 0;
-        this.object = null;
+        this.object = undefined;
     }
 
     StopRecording() {
@@ -15,7 +15,7 @@ class RecordedMovement {
     StartReplaying(t) {
         this.isReplaying = true;
         this.tickStartedReplaying = t;
-        this.object = new PlayerClone(this.origin.x,this.origin.y,42,42,"#ff000075");
+        this.object = new PlayerClone(this.origin.x,this.origin.y,42,42,"#ff000075",this);
     }
 
     StopReplaying() {

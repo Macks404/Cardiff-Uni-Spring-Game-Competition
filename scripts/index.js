@@ -84,10 +84,20 @@ Tick = () => {
         if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
     }
 
+    if(playerObject.onDynamicObj != undefined) {
+        playerObject.pos.x += playerObject.onDynamicObj.recordedVelocities[ticks-playerObject.onDynamicObj.tickStartedReplaying].x
+        playerObject.pos.y += playerObject.onDynamicObj.recordedVelocities[ticks-playerObject.onDynamicObj.tickStartedReplaying].y
+    }
+
     let prevPos = {... playerObject.Pos};
 
     playerObject.ApplyMovement(deltatime);
     playerObject.GetCollision(mapObjects);
+    recordedMovements.forEach(movement => {
+        if(movement.object != undefined && movement.isReplaying) {
+            playerObject.GetCollision([movement.object])
+        }
+    })    
 
     if(recordingMovement) {
         recordedMovements[0].RecordCurrentVelocity(prevPos,playerObject.Pos);
@@ -107,7 +117,7 @@ Tick = () => {
 
     // Render player clones
     recordedMovements.forEach(movement => {
-        if(movement.object != null && movement.isReplaying) {
+        if(movement.object != undefined && movement.isReplaying) {
             Render([movement.object])
         }
     })    

@@ -33,8 +33,9 @@ class StaticObject extends GameObject {
 }
 
 class PlayerClone extends GameObject {
-    constructor(posX, posY, width, height, color) {
+    constructor(posX, posY, width, height, color,obj) {
         super(posX, posY, width, height, color);
+        this.recordedMovement = obj
     }
 }
 
@@ -44,6 +45,7 @@ class Player extends GameObject {
         this.speed = speed;
         this.velocity = {x:0,y:0};
         this.gravity = gravity;
+        this.onDynamicObj = undefined;
     }
 
     get Grounded() {
@@ -74,10 +76,6 @@ class Player extends GameObject {
     GetCollision(objs) {
         // if the player is grounded (it is on a dynamic object) apply the velocity to the player
         objs.forEach(obj => {
-            if(obj instanceof RecordedMovement) {
-                obj = obj.object
-            }
-
             let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
             let collisionY = this.pos.y < obj.pos.y + obj.size.y && this.pos.y + this.size.y > obj.pos.y;
             if(collisionX && collisionY) {
@@ -99,12 +97,22 @@ class Player extends GameObject {
                     if(this.pos.y < obj.pos.y) {
                         // push up
                         this.pos.y -= overlapY;
+                        if(obj instanceof PlayerClone) {
+                            this.onDynamicObj = obj.recordedMovement;
+                        }
+                        else{
+                            this.onDynamicObj = undefined;
+                        }
                     }
                     else {
                         // push down
                         this.pos.y += overlapY;
                     }
                 }
+            }
+
+            if(!collisionY) {
+                this.onDynamicObj = undefined;
             }
         });
     }
