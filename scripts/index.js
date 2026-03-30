@@ -11,22 +11,42 @@ document.addEventListener("keyup", (event) => {
     if(keysPressed.includes(event.key)) {
         keysPressed.splice(keysPressed.indexOf(event.key), 1);
     }
-
-    if(event.key == " ") {
+    if(event.key == " " && document.activeElement == document.body) {
         if(recordedMovements.length > 0) {
-            let recordedMovement = recordedMovements[recordedMovements.length-1]
-            if(recordedMovement.isRecording) {
-                // currently recording -> stop recording
-                recordedMovement.StopRecording();
-                recordedMovement.StartReplaying(ticks);
+            if(currentRecordedMovementsIndex != -1) {
+                let recordedMovement = recordedMovements[currentRecordedMovementsIndex]
+                if(recordedMovement.isRecording) {
+                    // currently recording -> stop recording
+                    recordedMovement.StopRecording();
+                    document.getElementById("recordingMovement").innerText = "Press Space To Record Movement"
+                    const button = document.createElement("button")
+                    button.classList.add("replayButtons")
+                    button.id = recordedMovements.length
+                    button.innerText = "Play Replay " + button.id
+                    currentRecordedMovementsIndex = -1;
+                    button.onclick = () => {
+                        // replay button functionality
+                        if(currentRecordedMovementsIndex != -1) {
+                            recordedMovements[currentRecordedMovementsIndex].StopReplaying();
+                        }
+                        recordedMovements[button.id-1].StartReplaying(ticks);
+                        currentRecordedMovementsIndex = button.id-1;
+                        button.blur()
+                    }
+                    document.body.appendChild(button);
+                }
             }
-            else if(recordedMovements[recordedMovements.length-1].isReplaying) {
-                // currently replaying
-                console.log("already replaying")
+            else {
+                // not doing anything - record
+                document.getElementById("recordingMovement").innerText = "Recording Movement";
+                recordedMovements.push(new RecordedMovement({...playerObject.Pos}));
+                currentRecordedMovementsIndex = recordedMovements.length-1;
             }
         }
         else {
+            document.getElementById("recordingMovement").innerText = "Recording Movement";
             recordedMovements.push(new RecordedMovement({...playerObject.Pos}));
+            currentRecordedMovementsIndex = 0;
         }
     }
 })
@@ -40,6 +60,7 @@ Render = (objs) => {
     });
 }
 
+let currentRecordedMovementsIndex = -1;
 let lastFrame = 0;
 let deltatime = 0;
 let ticks = 0;
@@ -51,14 +72,15 @@ Tick = () => {
     let recordingMovement = false;
     let replayingMovement = false;
 
-    if(recordedMovements.length > 0) {
-        recordedMovement = recordedMovements[recordedMovements.length-1]
+    if(recordedMovements.length > 0 && currentRecordedMovementsIndex != -1) {
+        recordedMovement = recordedMovements[currentRecordedMovementsIndex]
         if(recordedMovement.isRecording) {
             recordingMovement = true;
         }
         else if(recordedMovement.isReplaying) {
             if(recordedMovement.recordedVelocities.length-1 == ticks-recordedMovement.tickStartedReplaying) {
                 recordedMovement.StopReplaying()
+                currentRecordedMovementsIndex = -1;
             }
             else {
                 replayingMovement = true;
@@ -84,9 +106,10 @@ Tick = () => {
         if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
     }
 
-    if(playerObject.onDynamicObj != undefined) {
-        playerObject.pos.x += playerObject.onDynamicObj.recordedVelocities[ticks-playerObject.onDynamicObj.tickStartedReplaying].x
-        playerObject.pos.y += playerObject.onDynamicObj.recordedVelocities[ticks-playerObject.onDynamicObj.tickStartedReplaying].y
+    // Move player with dynamic object
+    if(playerObject.dynamicObject != undefined) {
+        playerObject.pos.x += playerObject.dynamicObject.recordedVelocities[ticks-playerObject.dynamicObject.tickStartedReplaying].x
+        playerObject.pos.y += playerObject.dynamicObject.recordedVelocities[ticks-playerObject.dynamicObject.tickStartedReplaying].y
     }
 
     let prevPos = {... playerObject.Pos};
@@ -100,14 +123,14 @@ Tick = () => {
     })    
 
     if(recordingMovement) {
-        recordedMovements[0].RecordCurrentVelocity(prevPos,playerObject.Pos);
+        recordedMovements[currentRecordedMovementsIndex].RecordCurrentVelocity(prevPos,playerObject.Pos);
     }
     else if(replayingMovement) {
-        recordedMovements[0].ReplayStep(ticks)
+        recordedMovements[currentRecordedMovementsIndex].ReplayStep(ticks)
     }
 
     // Render background
-    Render([new StaticObject(0,0,1000,500, "#3C474B")]);
+    Render([new StaticObject(0,0,1000,500, "#61988E")]);
     // Render player
     Render([playerObject]);
     // Render map
@@ -128,13 +151,13 @@ Tick = () => {
 }
 
 const mapObjects = [];
-mapObjects.push(new StaticObject(0,450,400,50, "#000000"));
-mapObjects.push(new StaticObject(450,450,200,50, "#000000"));
-mapObjects.push(new StaticObject(700,450,300,50, "#000000"));
-mapObjects.push(new StaticObject(0,100,200,50, "#000000"));
-mapObjects.push(new StaticObject(150,200,200,50, "#000000"));
-const finishObject = new StaticObject(900, 350, 60, 100, "#162521");
-const playerObject = new Player(10, 10, 40, 40, "#000000", 100, 80);
+mapObjects.push(new StaticObject(0,450,400,50, "#493843"));
+mapObjects.push(new StaticObject(450,450,200,50, "#493843"));
+mapObjects.push(new StaticObject(700,450,300,50, "#493843"));
+mapObjects.push(new StaticObject(0,100,200,50, "#493843"));
+mapObjects.push(new StaticObject(150,200,200,50, "#493843"));
+const finishObject = new StaticObject(900, 350, 60, 100, "#A0B2A6");
+const playerObject = new Player(10, 10, 40, 40, "#A0B2A6", 100, 80);
 const recordedMovements = [];
 
 Tick();

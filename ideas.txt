@@ -1,5 +1,13 @@
-player changes color depending on health
 abilities slowly given
 player copy slightly opaque
 limited amount of copies
 optimise only count movement ever 10 ticks
+maybe shooting enemies that the clone can block
+
+NEED TO MAKE IT SO PLAYER GOES BACK TO ORIGIN AFTER RECORDING
+
+Levels:
+first level: platform the player needs to make a simple static replica to be able to jump on
+second level: platform at start and end of level - big gap between
+third level: 
+ABILITY UNLOCK - 2nd replay

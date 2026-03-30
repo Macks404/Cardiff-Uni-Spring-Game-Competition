@@ -45,7 +45,7 @@ class Player extends GameObject {
         this.speed = speed;
         this.velocity = {x:0,y:0};
         this.gravity = gravity;
-        this.onDynamicObj = undefined;
+        this.dynamicObject = undefined;
     }
 
     get Grounded() {
@@ -74,8 +74,8 @@ class Player extends GameObject {
     }
 
     GetCollision(objs) {
-        // if the player is grounded (it is on a dynamic object) apply the velocity to the player
         objs.forEach(obj => {
+            // AABB collision https://kishimotostudios.com/articles/aabb_collision/
             let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
             let collisionY = this.pos.y < obj.pos.y + obj.size.y && this.pos.y + this.size.y > obj.pos.y;
             if(collisionX && collisionY) {
@@ -98,10 +98,10 @@ class Player extends GameObject {
                         // push up
                         this.pos.y -= overlapY;
                         if(obj instanceof PlayerClone) {
-                            this.onDynamicObj = obj.recordedMovement;
+                            this.dynamicObject = obj.recordedMovement;
                         }
                         else{
-                            this.onDynamicObj = undefined;
+                            this.dynamicObject = undefined;
                         }
                     }
                     else {
@@ -112,7 +112,7 @@ class Player extends GameObject {
             }
 
             if(!collisionY) {
-                this.onDynamicObj = undefined;
+                this.dynamicObject = undefined;
             }
         });
     }
