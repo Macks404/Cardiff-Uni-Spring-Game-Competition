@@ -37,6 +37,7 @@ document.addEventListener("keyup", (event) => {
                 }
             }
             else {
+                
                 // not doing anything - record
                 document.getElementById("recordingMovement").innerText = "Recording Movement";
                 recordedMovements.push(new RecordedMovement({...playerObject.Pos}));
