@@ -11,6 +11,7 @@ document.addEventListener("keyup", (event) => {
     if(keysPressed.includes(event.key)) {
         keysPressed.splice(keysPressed.indexOf(event.key), 1);
     }
+    if(event.key == "w") jumpedThisHold = false;
     if(event.key == " " && document.activeElement == document.body) {
         if(recordedMovements.length > 0) {
             if(currentRecordedMovementsIndex != -1) {
@@ -71,6 +72,8 @@ Render = (objs) => {
     });
 }
 
+let jumpedThisHold = false;
+
 let currentRecordedMovementsIndex = -1;
 let lastFrame = 0;
 let deltatime = 0;
@@ -113,8 +116,9 @@ Tick = () => {
     else {
         playerObject.velocity.x = 0;
     }
-    if(keysPressed.includes("w")) {
-        playerObject.velocity.y = -5*playerObject.Speed;
+    if(keysPressed.includes("w") && !jumpedThisHold) {
+        jumpedThisHold = true;
+        playerObject.Jump()
     }
     // Move player with dynamic object
     if(playerObject.dynamicObject != undefined) {
@@ -167,7 +171,7 @@ mapObjects.push(new StaticObject(700,450,300,50, "#493843"));
 mapObjects.push(new StaticObject(0,100,200,50, "#493843"));
 mapObjects.push(new StaticObject(150,200,200,50, "#493843"));
 const finishObject = new StaticObject(900, 350, 60, 100, "#A0B2A6");
-const playerObject = new Player(10, 10, 40, 40, "#A0B2A6", 100, 80);
+const playerObject = new Player(10, 10, 40, 40, "#A0B2A6", 90, 125);
 const recordedMovements = [];
 
 Tick();

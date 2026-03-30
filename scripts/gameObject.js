@@ -45,11 +45,10 @@ class Player extends GameObject {
         this.speed = speed;
         this.velocity = {x:0,y:0};
         this.gravity = gravity;
+        this.grounded = true;
         this.dynamicObject = undefined;
-    }
-
-    get Grounded() {
-        return this.grounded
+        this.jumping = false;
+        this.currentJumpVelocity = 0;
     }
 
     get Speed() {
@@ -68,12 +67,26 @@ class Player extends GameObject {
         this.velocity = v
     }
 
+    Jump() {
+        if(this.grounded && !this.jumping) {
+            console.log("jump")
+            this.jumping = true;
+            this.currentJumpVelocity = this.gravity*15;
+        }        
+    }
+
     ApplyMovement(dt) {
-        this.pos.x += this.velocity.x *dt
-        this.pos.y += this.velocity.y *dt
+        if(this.jumping && this.currentJumpVelocity >= this.gravity) {
+            this.currentJumpVelocity -= this.gravity;
+        }
+
+        this.pos.x += this.velocity.x *dt;
+        this.pos.y += this.velocity.y *dt;
+        this.pos.y -= this.currentJumpVelocity *dt;
     }
 
     GetCollision(objs) {
+        this.grounded = false;
         objs.forEach(obj => {
             // AABB collision https://kishimotostudios.com/articles/aabb_collision/
             let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
@@ -97,6 +110,7 @@ class Player extends GameObject {
                     if(this.pos.y < obj.pos.y) {
                         // push up
                         this.pos.y -= overlapY;
+                        this.grounded = true;
                         if(obj instanceof PlayerClone) {
                             this.dynamicObject = obj.recordedMovement;
                         }
@@ -108,6 +122,11 @@ class Player extends GameObject {
                         // push down
                         this.pos.y += overlapY;
                     }
+                }
+
+                if(this.pos.y < obj.pos.y) {
+                    this.grounded = true;
+                    this.jumping = false;
                 }
             }
 
