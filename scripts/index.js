@@ -18,6 +18,10 @@ document.addEventListener("keyup", (event) => {
                 if(recordedMovement.isRecording) {
                     // currently recording -> stop recording
                     recordedMovement.StopRecording();
+                    let btns = Array.from(document.getElementsByClassName("replayButtons"))
+                    btns.forEach(btn => {
+                        btn.disabled = false;
+                    }); 
                     document.getElementById("recordingMovement").innerText = "Press Space To Record Movement"
                     const button = document.createElement("button")
                     button.classList.add("replayButtons")
@@ -37,14 +41,18 @@ document.addEventListener("keyup", (event) => {
                 }
             }
             else {
-                
                 // not doing anything - record
                 document.getElementById("recordingMovement").innerText = "Recording Movement";
                 recordedMovements.push(new RecordedMovement({...playerObject.Pos}));
                 currentRecordedMovementsIndex = recordedMovements.length-1;
+                let btns = Array.from(document.getElementsByClassName("replayButtons"))
+                btns.forEach(btn => {
+                    btn.disabled = true;
+                }); 
             }
         }
         else {
+            // no recordings exist
             document.getElementById("recordingMovement").innerText = "Recording Movement";
             recordedMovements.push(new RecordedMovement({...playerObject.Pos}));
             currentRecordedMovementsIndex = 0;
@@ -89,6 +97,9 @@ Tick = () => {
         }
     }
 
+    // Apply gravity
+    if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
+
     // Handle input
     if(keysPressed.includes("a") && !keysPressed.includes("d")) {
         playerObject.velocity.x = -5*playerObject.Speed;
@@ -99,14 +110,9 @@ Tick = () => {
     else {
         playerObject.velocity.x = 0;
     }
-    if(keysPressed.includes("w") && !keysPressed.includes("s")) {
+    if(keysPressed.includes("w")) {
         playerObject.velocity.y = -5*playerObject.Speed;
     }
-    else {
-        // Apply gravity
-        if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
-    }
-
     // Move player with dynamic object
     if(playerObject.dynamicObject != undefined) {
         playerObject.pos.x += playerObject.dynamicObject.recordedVelocities[ticks-playerObject.dynamicObject.tickStartedReplaying].x
