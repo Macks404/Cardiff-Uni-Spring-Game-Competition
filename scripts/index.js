@@ -18,6 +18,7 @@ document.addEventListener("keyup", (event) => {
                 if(recordedMovement.isRecording) {
                     // currently recording -> stop recording
                     recordedMovement.StopRecording();
+                    playerObject.pos = {...recordedMovement.origin}
                     let btns = Array.from(document.getElementsByClassName("replayButtons"))
                     btns.forEach(btn => {
                         btn.disabled = false;
@@ -33,6 +34,7 @@ document.addEventListener("keyup", (event) => {
                         if(currentRecordedMovementsIndex != -1) {
                             recordedMovements[currentRecordedMovementsIndex].StopReplaying();
                         }
+                        document.getElementById("recordingMovement").innerText = "Currently Replaying Movement"
                         recordedMovements[button.id-1].StartReplaying(ticks);
                         currentRecordedMovementsIndex = button.id-1;
                         button.blur()
@@ -89,6 +91,7 @@ Tick = () => {
         else if(recordedMovement.isReplaying) {
             if(recordedMovement.recordedVelocities.length-1 == ticks-recordedMovement.tickStartedReplaying) {
                 recordedMovement.StopReplaying()
+                document.getElementById("recordingMovement").innerText = "Press Space To Record Movement"
                 currentRecordedMovementsIndex = -1;
             }
             else {
