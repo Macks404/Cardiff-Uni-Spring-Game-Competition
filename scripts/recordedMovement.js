@@ -15,7 +15,7 @@ class RecordedMovement {
     StartReplaying(t) {
         this.isReplaying = true;
         this.tickStartedReplaying = t;
-        this.object = new PlayerClone(this.origin.x,this.origin.y,42,42,"#A0B2A6",this);
+        this.object = new PlayerClone(this.origin.x,this.origin.y,42,42,"#3a423d",this);
     }
 
     StopReplaying() {

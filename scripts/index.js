@@ -11,7 +11,7 @@ document.addEventListener("keyup", (event) => {
     if(keysPressed.includes(event.key)) {
         keysPressed.splice(keysPressed.indexOf(event.key), 1);
     }
-    if(event.key == "w") jumpedThisHold = false;
+    if(event.key == "w" || event.key == "ArrowUp") jumpedThisHold = false;
     if(event.key == " " && document.activeElement == document.body) {
         if(recordedMovements.length > 0) {
             if(currentRecordedMovementsIndex != -1) {
@@ -73,7 +73,7 @@ Render = (objs) => {
 }
 
 let jumpedThisHold = false;
-
+let currentLevel = 0;
 let currentRecordedMovementsIndex = -1;
 let lastFrame = 0;
 let deltatime = 0;
@@ -103,20 +103,39 @@ Tick = () => {
         }
     }
 
-    // Apply gravity
-    if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
+    if(finishObject.level != currentLevel) {
+        currentLevel += 1;
+        LoadNextLevel();
+    }
+
+    let leftIn = false;
+    let rightIn = false;
+    let upIn = false;
+    let downIn = false;
+    if(keysPressed.includes("a") || keysPressed.includes("ArrowLeft")) {
+        leftIn = true;
+    }
+    if(keysPressed.includes("d") || keysPressed.includes("ArrowRight")) {
+        rightIn = true;
+    }
+    if(keysPressed.includes("s") || keysPressed.includes("ArrowDown")) {
+        downIn = true;
+    }
+    if(keysPressed.includes("w") || keysPressed.includes("ArrowUp")) {
+        upIn = true;
+    }
 
     // Handle input
-    if(keysPressed.includes("a") && !keysPressed.includes("d")) {
+    if(leftIn && !rightIn) {
         playerObject.velocity.x = -5*playerObject.Speed;
     }
-    else if(keysPressed.includes("d") && !keysPressed.includes("a")) {
+    else if(rightIn && !leftIn) {
         playerObject.velocity.x = 5*playerObject.Speed;
     }
     else {
         playerObject.velocity.x = 0;
     }
-    if(keysPressed.includes("w") && !jumpedThisHold) {
+    if(upIn && !jumpedThisHold) {
         jumpedThisHold = true;
         playerObject.Jump()
     }
@@ -129,12 +148,17 @@ Tick = () => {
     let prevPos = {... playerObject.Pos};
 
     playerObject.ApplyMovement(deltatime);
-    playerObject.GetCollision(mapObjects);
+
+    let collisionObjs = []
     recordedMovements.forEach(movement => {
         if(movement.object != undefined && movement.isReplaying) {
-            playerObject.GetCollision([movement.object])
+            collisionObjs.push(movement.object)
         }
-    })    
+    })
+    collisionObjs.push(...mapObjects)
+    collisionObjs.push(finishObject)
+    playerObject.collidedObjects = playerObject.GetCollision(collisionObjs);
+    playerObject.ReadjustPos(mapObjects)
 
     if(recordingMovement) {
         recordedMovements[currentRecordedMovementsIndex].RecordCurrentVelocity(prevPos,playerObject.Pos);
@@ -142,6 +166,9 @@ Tick = () => {
     else if(replayingMovement) {
         recordedMovements[currentRecordedMovementsIndex].ReplayStep(ticks)
     }
+
+    // Apply gravity
+    if(ticks > 1) playerObject.velocity.y = 5*playerObject.Gravity;
 
     // Render background
     Render([new StaticObject(0,0,1000,500, "#61988E")]);
@@ -164,14 +191,49 @@ Tick = () => {
     ticks+=1;
 }
 
-const mapObjects = [];
-mapObjects.push(new StaticObject(0,450,400,50, "#493843"));
-mapObjects.push(new StaticObject(450,450,200,50, "#493843"));
-mapObjects.push(new StaticObject(700,450,300,50, "#493843"));
-mapObjects.push(new StaticObject(0,100,200,50, "#493843"));
-mapObjects.push(new StaticObject(150,200,200,50, "#493843"));
-const finishObject = new StaticObject(900, 350, 60, 100, "#A0B2A6");
-const playerObject = new Player(10, 10, 40, 40, "#A0B2A6", 90, 125);
+LoadNextLevel = () => {
+    const lvl = levels[currentLevel];
+    // load map objects
+    mapObjects = lvl.mapObjs
+    // create map borders
+    mapObjects.push(new StaticObject(0,500,1000,100, "#493843"));
+    mapObjects.push(new StaticObject(0,-100,1000,100, "#493843"));
+    mapObjects.push(new StaticObject(-100,0,100,500, "#493843"));
+    mapObjects.push(new StaticObject(1000,0,100,500, "#493843"));
+
+    finishObject = lvl.finishObj
+    playerObject = lvl.playerObj
+
+    document.getElementById("level").innerText = `Level ${currentLevel+1}`
+}
+
+let mapObjects = [];
+let finishObject = undefined;
+let playerObject = undefined;
+
+
+Level1 = {
+    "mapObjs": 
+    [new StaticObject(0,450,225,50, "#493843"),
+    new StaticObject(275,375,200,50, "#493843"),
+    new StaticObject(525,275,200,50, "#493843"),
+    new StaticObject(775,200,225,50, "#493843")],
+    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 0),
+    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
+};
+Level2 = {
+    "mapObjs": 
+    [new StaticObject(250,375,750,125, "#493843"),
+    new StaticObject(400,200,150,175, "#493843"),
+    new StaticObject(625,200,150,50, "#493843"),
+    new StaticObject(850,200,150,175, "#493843")],
+    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 1),
+    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
+};
+
+const levels = [Level1,Level2]
+
 const recordedMovements = [];
 
+LoadNextLevel()
 Tick();
