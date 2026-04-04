@@ -11,6 +11,9 @@ document.addEventListener("keyup", (event) => {
     if(keysPressed.includes(event.key)) {
         keysPressed.splice(keysPressed.indexOf(event.key), 1);
     }
+    if(event.key == "Return" || event.key == "Enter") {
+        document.getElementById("levelTip").style.opacity = 1;
+    }
     if(event.key == "w" || event.key == "ArrowUp") jumpedThisHold = false;
     if(event.key == " " && document.activeElement == document.body) {
         if(recordedMovements.length > 0) {
@@ -88,6 +91,9 @@ Tick = () => {
 
     if(finishObject.level != currentLevel) {
         currentLevel += 1;
+        LoadNextLevel();
+    }
+    if(playerObject.dead) {
         LoadNextLevel();
     }
 
@@ -206,21 +212,59 @@ Tick = () => {
 }
 
 LoadNextLevel = () => {
+    document.getElementById("recordingMovement").innerText = "Press Space To Record Movement"
+    currentRecordedMovementsIndex = -1;
     const lvl = levels[currentLevel];
     // load map objects
-    mapObjects = lvl.mapObjs
+    mapObjects = lvl.mapObjs.map(obj =>
+        new obj.constructor(obj.Pos.x, obj.Pos.y, obj.Size.x, obj.Size.y, obj.Color)
+    );
     // create map borders
     mapObjects.push(new StaticObject(0,500,1000,100, "#493843"));
     mapObjects.push(new StaticObject(0,-100,1000,100, "#493843"));
     mapObjects.push(new StaticObject(-100,0,100,500, "#493843"));
     mapObjects.push(new StaticObject(1000,0,100,500, "#493843"));
 
-    finishObject = lvl.finishObj
-    playerObject = lvl.playerObj
-    movingPlatformObjects = lvl.platformObjs
+    finishObject = new FinishObject(
+        lvl.finishObj.Pos.x,
+        lvl.finishObj.Pos.y,
+        lvl.finishObj.Size.x,
+        lvl.finishObj.Size.y,
+        lvl.finishObj.Color,
+        lvl.finishObj.level
+    );
+    playerObject = new Player(
+        lvl.playerObj.Pos.x,
+        lvl.playerObj.Pos.y,
+        lvl.playerObj.Size.x,
+        lvl.playerObj.Size.y,
+        lvl.playerObj.Color,
+        lvl.playerObj.Speed,
+        lvl.playerObj.Gravity
+    );
+    movingPlatformObjects = lvl.platformObjs.map(obj =>
+        new MovingPlatform(
+            obj.Pos.x,
+            obj.Pos.y,
+            obj.Size.x,
+            obj.Size.y,
+            obj.Color,
+            obj.movePath,
+            obj.speed
+        )
+    );
     recordedMovements = [];
     recordingMovement = false;
     replayingMovement = false;
+
+    // create tip text
+    let tipText = document.getElementById("levelTip");
+    if(tipText != null) tipText.remove()
+    tipText = document.createElement("p");
+    tipText.innerText = lvl.tipText;
+    tipText.style.opacity = 0;
+    tipText.id = "levelTip"
+    document.body.appendChild(tipText)
 
     // delete replay buttons
     let btns = Array.from(document.getElementsByClassName("replayButtons"))
@@ -245,18 +289,21 @@ Level1 = {
     "platformObjs":
     [],
     "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 0),
-    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
+    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125),
+    "tipText": "Press {W} to jump."
 };
 Level2 = {
     "mapObjs": 
     [new StaticObject(250,375,750,125, "#493843"),
     new StaticObject(400,200,150,175, "#493843"),
     new StaticObject(625,200,150,50, "#493843"),
-    new StaticObject(850,200,150,175, "#493843")],
+    new StaticObject(850,200,150,175, "#493843"),
+    new KillingObject(550,350,300,25)],
     "platformObjs":
     [],
     "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 1),
-    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
+    "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125),
+    "tipText": "You can stand on your clone object whilst it jumps."
 };
 Level3 = {
     "mapObjs": 
@@ -269,7 +316,8 @@ Level3 = {
     "platformObjs":
     [new MovingPlatform(200,350,100,25,"#493843",[200,350],1)],
     "finishObj": new FinishObject(925, 100, 60, 100, "#A0B2A6", 2),
-    "playerObj": new Player(10, 300, 40, 40, "#A0B2A6", 90, 125)
+    "playerObj": new Player(10, 300, 40, 40, "#A0B2A6", 90, 125),
+    "tipText": "Lava will not kill you when you are recording your movement."
 };
 
 const levels = [Level1,Level2,Level3]

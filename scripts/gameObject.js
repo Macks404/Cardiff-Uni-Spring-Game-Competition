@@ -79,6 +79,7 @@ class Player extends GameObject {
         this.currentJumpVelocity = 0;
         this.collidedObjects = {"x":[],"y":[]};
         this.platformObj = undefined;
+        this.dead = false;
     }
 
     get Speed() {
@@ -179,7 +180,8 @@ class Player extends GameObject {
                     this.dynamicObject = obj.recordedMovement;
                 }
                 if(obj instanceof KillingObject && !isRecording) {
-                    location.reload();
+                    //location.reload();
+                    this.dead = true;
                 }
                 if(obj instanceof MovingPlatform) {
                     touchingPlatform = true;
