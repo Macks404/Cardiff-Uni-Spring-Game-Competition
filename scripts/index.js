@@ -86,6 +86,11 @@ Tick = () => {
     let recordingMovement = false;
     let replayingMovement = false;
 
+    if(finishObject.level != currentLevel) {
+        currentLevel += 1;
+        LoadNextLevel();
+    }
+
     if(recordedMovements.length > 0 && currentRecordedMovementsIndex != -1) {
         recordedMovement = recordedMovements[currentRecordedMovementsIndex]
         if(recordedMovement.isRecording) {
@@ -101,11 +106,6 @@ Tick = () => {
                 replayingMovement = true;
             }
         }
-    }
-
-    if(finishObject.level != currentLevel) {
-        currentLevel += 1;
-        LoadNextLevel();
     }
 
     let leftIn = false;
@@ -139,13 +139,17 @@ Tick = () => {
         jumpedThisHold = true;
         playerObject.Jump()
     }
-    // Move player with dynamic object
+
+    let prevPos = {... playerObject.pos};
+    // Move player with clone object
     if(playerObject.dynamicObject != undefined) {
         playerObject.pos.x += playerObject.dynamicObject.recordedVelocities[ticks-playerObject.dynamicObject.tickStartedReplaying].x
         playerObject.pos.y += playerObject.dynamicObject.recordedVelocities[ticks-playerObject.dynamicObject.tickStartedReplaying].y
     }
-
-    let prevPos = {... playerObject.Pos};
+    // Move player with platform object
+    if(playerObject.platformObj != undefined) {
+        playerObject.pos.x += playerObject.platformObj.velocity*playerObject.platformObj.speed*deltatime;
+    }
 
     playerObject.ApplyMovement(deltatime);
 
@@ -156,8 +160,10 @@ Tick = () => {
         }
     })
     collisionObjs.push(...mapObjects)
+    collisionObjs.push(...movingPlatformObjects)
     collisionObjs.push(finishObject)
-    playerObject.collidedObjects = playerObject.GetCollision(collisionObjs);
+    playerObject.collidedObjects = playerObject.GetCollision(collisionObjs,recordingMovement,replayingMovement);
+
     playerObject.ReadjustPos(mapObjects)
 
     if(recordingMovement) {
@@ -165,6 +171,12 @@ Tick = () => {
     }
     else if(replayingMovement) {
         recordedMovements[currentRecordedMovementsIndex].ReplayStep(ticks)
+    }
+
+    if(movingPlatformObjects.length > 0 && ticks > 1) {
+        movingPlatformObjects.forEach(obj => {
+            obj.Step(deltatime);
+        })
     }
 
     // Apply gravity
@@ -178,6 +190,8 @@ Tick = () => {
     Render(mapObjects);
     // Render finish point
     Render([finishObject]);
+    // Render platforms
+    Render(movingPlatformObjects)
 
     // Render player clones
     recordedMovements.forEach(movement => {
@@ -203,14 +217,24 @@ LoadNextLevel = () => {
 
     finishObject = lvl.finishObj
     playerObject = lvl.playerObj
+    movingPlatformObjects = lvl.platformObjs
+    recordedMovements = [];
+    recordingMovement = false;
+    replayingMovement = false;
+
+    // delete replay buttons
+    let btns = Array.from(document.getElementsByClassName("replayButtons"))
+    btns.forEach(btn => {
+        btn.remove()
+    })
 
     document.getElementById("level").innerText = `Level ${currentLevel+1}`
 }
 
 let mapObjects = [];
+let movingPlatformObjects = [];
 let finishObject = undefined;
 let playerObject = undefined;
-
 
 Level1 = {
     "mapObjs": 
@@ -218,6 +242,8 @@ Level1 = {
     new StaticObject(275,375,200,50, "#493843"),
     new StaticObject(525,275,200,50, "#493843"),
     new StaticObject(775,200,225,50, "#493843")],
+    "platformObjs":
+    [],
     "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 0),
     "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
 };
@@ -227,13 +253,28 @@ Level2 = {
     new StaticObject(400,200,150,175, "#493843"),
     new StaticObject(625,200,150,50, "#493843"),
     new StaticObject(850,200,150,175, "#493843")],
+    "platformObjs":
+    [],
     "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 1),
     "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125)
 };
+Level3 = {
+    "mapObjs": 
+    [new KillingObject(150,475,350,25),
+    new StaticObject(0,350,150,150, "#493843"),
+    new StaticObject(500,350,500,300, "#493843"),
+    new StaticObject(500,300,100,50, "#493843"),
+    new StaticObject(900,200,100,150, "#493843"),
+    new KillingObject(600,325,300,25)],
+    "platformObjs":
+    [new MovingPlatform(200,350,100,25,"#493843",[200,350],1)],
+    "finishObj": new FinishObject(925, 100, 60, 100, "#A0B2A6", 2),
+    "playerObj": new Player(10, 300, 40, 40, "#A0B2A6", 90, 125)
+};
 
-const levels = [Level1,Level2]
+const levels = [Level1,Level2,Level3]
 
-const recordedMovements = [];
+let recordedMovements = [];
 
 LoadNextLevel()
 Tick();

@@ -46,6 +46,27 @@ class FinishObject extends GameObject {
     }
 }
 
+class MovingPlatform extends GameObject {
+    constructor(posX, posY, width, height, color, movePath, velocity) {
+        super(posX, posY, width, height, color);
+        this.movePath = movePath
+        this.velocity = velocity
+        this.speed = 75
+    }
+
+    Step(dt) {
+        if(this.pos.x >= this.movePath[1]) this.velocity = -1
+        if(this.pos.x <= this.movePath[0]) this.velocity = 1
+        this.pos.x += this.velocity*dt*this.speed;
+    }
+}
+
+class KillingObject extends GameObject {
+    constructor(posX, posY, width, height) {
+        super(posX, posY, width, height, "#7600006b");
+    }
+}
+
 class Player extends GameObject {
     constructor(posX, posY, width, height, color, speed, gravity) {
         super(posX, posY, width, height, color);
@@ -57,6 +78,7 @@ class Player extends GameObject {
         this.jumping = false;
         this.currentJumpVelocity = 0;
         this.collidedObjects = {"x":[],"y":[]};
+        this.platformObj = undefined;
     }
 
     get Speed() {
@@ -136,8 +158,9 @@ class Player extends GameObject {
         this.pos.y -= this.currentJumpVelocity *dt;
     }
 
-    GetCollision(objs) {
+    GetCollision(objs, isRecording, isReplaying) {
         let touchingClone = false;
+        let touchingPlatform = false;
         this.grounded = false;
         let collidedObjects = {"x":[],"y":[]}
 
@@ -148,12 +171,19 @@ class Player extends GameObject {
             if(collisionX && collisionY) {
                 let overlapX = Math.min(this.pos.x + this.size.x - obj.pos.x, obj.pos.x + obj.size.x - this.pos.x);
                 let overlapY = Math.min(this.pos.y + this.size.y - obj.pos.y, obj.pos.y + obj.size.y - this.pos.y);
-                if(obj instanceof FinishObject) {
+                if(obj instanceof FinishObject && !isRecording && !isReplaying) {
                     obj.level += 1;
                 }
                 if(obj instanceof PlayerClone) {
                     touchingClone = true;
                     this.dynamicObject = obj.recordedMovement;
+                }
+                if(obj instanceof KillingObject && !isRecording) {
+                    location.reload();
+                }
+                if(obj instanceof MovingPlatform) {
+                    touchingPlatform = true;
+                    this.platformObj = obj;
                 }
                 
                 // adjust players position based on collision
@@ -185,6 +215,9 @@ class Player extends GameObject {
         });
         if(!touchingClone) {
             this.dynamicObject = undefined;
+        }
+        if(!touchingPlatform) {
+            this.platformObj = undefined;
         }
         return collidedObjects
     }
