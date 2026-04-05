@@ -71,7 +71,12 @@ Render = (objs) => {
         let pos = obj.Pos;
         let size = obj.Size;
         ctx.fillStyle = obj.Color;
+        if(obj instanceof StaticObject) {
+            ctx.globalAlpha = obj.opacity
+            console.log(obj)
+        }
         ctx.fillRect(pos.x,pos.y,size.x,size.y);
+        ctx.globalAlpha = 1;
     });
 }
 
@@ -93,9 +98,9 @@ Tick = () => {
         currentLevel += 1;
         LoadNextLevel();
     }
-    if(playerObject.dead) {
-        LoadNextLevel();
-    }
+    if(playerObject.dead) LoadNextLevel();
+    // if glitched out of map reset
+    if(playerObject.pos.y > 700) LoadNextLevel();
 
     if(recordedMovements.length > 0 && currentRecordedMovementsIndex != -1) {
         recordedMovement = recordedMovements[currentRecordedMovementsIndex]
@@ -157,16 +162,24 @@ Tick = () => {
         playerObject.pos.x += playerObject.platformObj.velocity*playerObject.platformObj.speed*deltatime;
     }
 
+    mapObjects.forEach(obj => {
+        if(obj.fadingOut) {
+            obj.fadeOutStep(deltatime);
+        }
+    })
+
     playerObject.ApplyMovement(deltatime);
 
     let collisionObjs = []
+    collisionObjs.push(...mapObjects)
     recordedMovements.forEach(movement => {
         if(movement.object != undefined && movement.isReplaying) {
             collisionObjs.push(movement.object)
         }
     })
-    collisionObjs.push(...mapObjects)
+
     collisionObjs.push(...movingPlatformObjects)
+    collisionObjs.push(...pressurePlateObjects)
     collisionObjs.push(finishObject)
     playerObject.collidedObjects = playerObject.GetCollision(collisionObjs,recordingMovement,replayingMovement);
 
@@ -198,13 +211,15 @@ Tick = () => {
     Render([finishObject]);
     // Render platforms
     Render(movingPlatformObjects)
+    // Render pressure plates
+    Render(pressurePlateObjects)
 
     // Render player clones
     recordedMovements.forEach(movement => {
         if(movement.object != undefined && movement.isReplaying) {
             Render([movement.object])
         }
-    })    
+    })
     
     requestAnimationFrame(Tick);
 
@@ -217,7 +232,14 @@ LoadNextLevel = () => {
     const lvl = levels[currentLevel];
     // load map objects
     mapObjects = lvl.mapObjs.map(obj =>
-        new obj.constructor(obj.Pos.x, obj.Pos.y, obj.Size.x, obj.Size.y, obj.Color)
+        new obj.constructor(
+            obj.Pos.x, 
+            obj.Pos.y, 
+            obj.Size.x, 
+            obj.Size.y, 
+            obj.Color, 
+            obj.opacity
+        )
     );
     // create map borders
     mapObjects.push(new StaticObject(0,500,1000,100, "#493843"));
@@ -253,6 +275,16 @@ LoadNextLevel = () => {
             obj.speed
         )
     );
+    pressurePlateObjects = lvl.pressurePlates.map(obj =>
+        new PressurePlate(
+            obj.Pos.x,
+            obj.Pos.y,
+            obj.Size.x,
+            obj.Size.y,
+            obj.Color,
+            obj.connectedObjIndex
+        )
+    );
     recordedMovements = [];
     recordingMovement = false;
     replayingMovement = false;
@@ -276,6 +308,7 @@ LoadNextLevel = () => {
 }
 
 let mapObjects = [];
+let pressurePlateObjects = [];
 let movingPlatformObjects = [];
 let finishObject = undefined;
 let playerObject = undefined;
@@ -286,11 +319,13 @@ Level1 = {
     new StaticObject(275,375,200,50, "#493843"),
     new StaticObject(525,275,200,50, "#493843"),
     new StaticObject(775,200,225,50, "#493843")],
+    "pressurePlates":
+    [],
     "platformObjs":
     [],
-    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 0),
+    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 3),
     "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125),
-    "tipText": "Press {W} to jump."
+    "tipText": "Press {W} to jump.",
 };
 Level2 = {
     "mapObjs": 
@@ -299,11 +334,13 @@ Level2 = {
     new StaticObject(625,200,150,50, "#493843"),
     new StaticObject(850,200,150,175, "#493843"),
     new KillingObject(550,350,300,25)],
+    "pressurePlates":
+    [],
     "platformObjs":
     [],
     "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 1),
     "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125),
-    "tipText": "You can stand on your clone object whilst it jumps."
+    "tipText": "You can stand on your clone object whilst it jumps.",
 };
 Level3 = {
     "mapObjs": 
@@ -313,14 +350,35 @@ Level3 = {
     new StaticObject(500,300,100,50, "#493843"),
     new StaticObject(900,200,100,150, "#493843"),
     new KillingObject(600,325,300,25)],
+    "pressurePlates":
+    [],
     "platformObjs":
     [new MovingPlatform(200,350,100,25,"#493843",[200,350],1)],
     "finishObj": new FinishObject(925, 100, 60, 100, "#A0B2A6", 2),
     "playerObj": new Player(10, 300, 40, 40, "#A0B2A6", 90, 125),
-    "tipText": "Lava will not kill you when you are recording your movement."
+    "tipText": "Lava will not kill you when you are recording your movement.",
 };
+Level4 = {    
+    "mapObjs": 
+    [new StaticObject(0,100,150,50, "#493843"),
+    new StaticObject(500,150,100,350, "#493843"),
+    new KillingObject(0,475,500,25),
+    new StaticObject(600,250,100,250, "#493843"),
+    new StaticObject(650,100,150,100, "#493843"),
+    new KillingObject(650,75,150,25),
+    new StaticObject(900,250,50,250, "#493843"),
+    new KillingObject(700,475,200,25),
+    ],
+    "pressurePlates":
+    [new PressurePlate(500,125,100,25,"#0e76006b",3)],
+    "platformObjs":
+    [new MovingPlatform(125,300,100,25,"#493843",[125,275],1)],
+    "finishObj": new FinishObject(900, 400, 60, 100, "#A0B2A6", 0),
+    "playerObj": new Player(610, 40, 40, 40, "#A0B2A6", 90, 125),
+    "tipText": "Press {W} to jump.",
+}
 
-const levels = [Level1,Level2,Level3]
+const levels = [Level4,Level1,Level2,Level3]
 
 let recordedMovements = [];
 

@@ -27,8 +27,26 @@ class GameObject {
 }
 
 class StaticObject extends GameObject {
-    constructor(posX, posY, width, height, color) {
+    constructor(posX, posY, width, height, color, opacity) {
         super(posX, posY, width, height, color);
+        if(opacity != undefined) {
+            this.opacity = opacity;
+        }
+        else {
+            this.opacity = 1;
+        }
+        this.fadingOut = false;
+    }
+
+    fadeOutStep(dt) {
+        if(this.opacity <= 0) {
+            this.fadingOut = false;
+            this.opacity = 0;
+            return;
+        }
+        if(dt == 0) dt = 0.01
+        this.opacity = Math.max(this.opacity - 1*dt, 0);
+        this.fadingOut = true;
     }
 }
 
@@ -67,6 +85,13 @@ class KillingObject extends GameObject {
     }
 }
 
+class PressurePlate extends GameObject {
+    constructor(posX, posY, width, height, color, connectedObjIndex) {
+        super(posX, posY, width, height, color);
+        this.connectedObjIndex = connectedObjIndex;
+    }
+}
+
 class Player extends GameObject {
     constructor(posX, posY, width, height, color, speed, gravity) {
         super(posX, posY, width, height, color);
@@ -100,7 +125,7 @@ class Player extends GameObject {
 
     Jump() {
         if(this.grounded) {
-            this.currentJumpVelocity = this.gravity*15;
+            this.currentJumpVelocity = 1500;
         }
     }
 
@@ -150,8 +175,9 @@ class Player extends GameObject {
     }
 
     ApplyMovement(dt) {
-        if(this.currentJumpVelocity >= this.gravity) {
-            this.currentJumpVelocity -= this.gravity;
+        this.currentJumpVelocity -= this.gravity *dt*30;
+        if(this.currentJumpVelocity < 0) {
+            this.currentJumpVelocity = 0;
         }
 
         this.pos.x += this.velocity.x *dt;
@@ -166,51 +192,58 @@ class Player extends GameObject {
         let collidedObjects = {"x":[],"y":[]}
 
         objs.forEach(obj => {
-            // AABB collision https://kishimotostudios.com/articles/aabb_collision/
-            let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
-            let collisionY = this.pos.y < obj.pos.y + obj.size.y && this.pos.y + this.size.y > obj.pos.y;
-            if(collisionX && collisionY) {
-                let overlapX = Math.min(this.pos.x + this.size.x - obj.pos.x, obj.pos.x + obj.size.x - this.pos.x);
-                let overlapY = Math.min(this.pos.y + this.size.y - obj.pos.y, obj.pos.y + obj.size.y - this.pos.y);
-                if(obj instanceof FinishObject && !isRecording && !isReplaying) {
-                    obj.level += 1;
-                }
-                if(obj instanceof PlayerClone) {
-                    touchingClone = true;
-                    this.dynamicObject = obj.recordedMovement;
-                }
-                if(obj instanceof KillingObject && !isRecording) {
-                    //location.reload();
-                    this.dead = true;
-                }
-                if(obj instanceof MovingPlatform) {
-                    touchingPlatform = true;
-                    this.platformObj = obj;
-                }
-                
-                // adjust players position based on collision
-                if(overlapX < overlapY) {
-                    if(this.pos.x < obj.pos.x) {
-                        // push left
-                        collidedObjects.x.push({"obj":obj,"overlap":-overlapX})
+            if(obj.opacity != 0){
+                // AABB collision https://kishimotostudios.com/articles/aabb_collision/
+                let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
+                let collisionY = this.pos.y < obj.pos.y + obj.size.y && this.pos.y + this.size.y > obj.pos.y;
+                if(collisionX && collisionY) {
+                    let overlapX = Math.min(this.pos.x + this.size.x - obj.pos.x, obj.pos.x + obj.size.x - this.pos.x);
+                    let overlapY = Math.min(this.pos.y + this.size.y - obj.pos.y, obj.pos.y + obj.size.y - this.pos.y);
+                    if(obj instanceof FinishObject && !isRecording && !isReplaying) {
+                        obj.level += 1;
                     }
+                    if(obj instanceof PlayerClone) {
+                        touchingClone = true;
+                        this.dynamicObject = obj.recordedMovement;
+                    }
+                    if(obj instanceof KillingObject && !isRecording) {
+                        //location.reload();
+                        this.dead = true;
+                    }
+                    if(obj instanceof MovingPlatform) {
+                        touchingPlatform = true;
+                        this.platformObj = obj;
+                    }
+                    if(obj instanceof PressurePlate) {
+                        objs[obj.connectedObjIndex].fadingOut = true;
+                        objs[obj.connectedObjIndex].fadeOutStep(0);
+                    }
+                    
+                    // adjust players position based on collision
+                    if(overlapX < overlapY) {
+                        if(this.pos.x < obj.pos.x) {
+                            // push left
+                            collidedObjects.x.push({"obj":obj,"overlap":-overlapX})
+                        }
+                        else {
+                            // push right
+                            collidedObjects.x.push({"obj":obj,"overlap":overlapX})
+                        }
+                    } 
                     else {
-                        // push right
-                        collidedObjects.x.push({"obj":obj,"overlap":overlapX})
-                    }
-                } 
-                else {
-                    if(this.pos.y < obj.pos.y) {
-                        this.grounded = true;
-                        this.currentJumpVelocity = 0;
+                        if(this.pos.y < obj.pos.y) {
+                            this.grounded = true;
+                            this.currentJumpVelocity = 0;
 
-                        // push up
-                        collidedObjects.y.push({"obj":obj,"overlap":-overlapY})
-                        this.grounded = true;
-                    }
-                    else {
-                        // push down
-                        collidedObjects.y.push({"obj":obj,"overlap":overlapY})
+                            // push up
+                            collidedObjects.y.push({"obj":obj,"overlap":-overlapY})
+                            this.grounded = true;
+                        }
+                        else {
+                            // push down
+                            collidedObjects.y.push({"obj":obj,"overlap":overlapY})
+                            this.currentJumpVelocity = 0;
+                        }
                     }
                 }
             }
