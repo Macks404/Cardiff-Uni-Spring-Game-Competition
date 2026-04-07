@@ -36,8 +36,18 @@ class StaticObject extends GameObject {
             this.opacity = 1;
         }
         this.fadingOut = false;
+        this.fadingIn = false;
     }
-
+    fadeInStep(dt) {
+        if(this.opacity >= 1) {
+            this.fadingIn = false;
+            this.opacity = 1;
+            return;
+        }
+        if(dt == 0) dt = 0.01
+        this.opacity = Math.min(this.opacity + 1*dt, 1);
+        this.fadingIn = true;
+    }
     fadeOutStep(dt) {
         if(this.opacity <= 0) {
             this.fadingOut = false;
@@ -47,6 +57,7 @@ class StaticObject extends GameObject {
         if(dt == 0) dt = 0.01
         this.opacity = Math.max(this.opacity - 1*dt, 0);
         this.fadingOut = true;
+
     }
 }
 
@@ -185,14 +196,14 @@ class Player extends GameObject {
         this.pos.y -= this.currentJumpVelocity *dt;
     }
 
-    GetCollision(objs, isRecording, isReplaying) {
+    GetCollision(objs, isRecording, isReplaying, cloneObj) {
         let touchingClone = false;
         let touchingPlatform = false;
         this.grounded = false;
         let collidedObjects = {"x":[],"y":[]}
 
         objs.forEach(obj => {
-            if(obj.opacity != 0){
+            if(obj.opacity === undefined || obj.opacity > 0.1){
                 // AABB collision https://kishimotostudios.com/articles/aabb_collision/
                 let collisionX = this.pos.x < obj.pos.x + obj.size.x && this.pos.x + this.size.x > obj.pos.x;
                 let collisionY = this.pos.y < obj.pos.y + obj.size.y && this.pos.y + this.size.y > obj.pos.y;
@@ -244,6 +255,23 @@ class Player extends GameObject {
                             collidedObjects.y.push({"obj":obj,"overlap":overlapY})
                             this.currentJumpVelocity = 0;
                         }
+                    }
+                }
+                else if(obj instanceof PressurePlate) {
+                    // peform seperate collision check to see if clone is on it
+                    if(cloneObj != undefined) {
+                        let collisionX = cloneObj.pos.x < obj.pos.x + obj.size.x && cloneObj.pos.x + cloneObj.size.x > obj.pos.x;
+                        let collisionY = cloneObj.pos.y < obj.pos.y + obj.size.y && cloneObj.pos.y + cloneObj.size.y > obj.pos.y;
+                        if(collisionX && collisionY) {
+                            objs[obj.connectedObjIndex].fadingOut = true;
+                            objs[obj.connectedObjIndex].fadingIn = false;
+                            objs[obj.connectedObjIndex].fadeOutStep(0);
+                        }
+                    }
+                    if(!objs[obj.connectedObjIndex].fadingOut) {
+                        objs[obj.connectedObjIndex].fadingIn = true;
+                        objs[obj.connectedObjIndex].fadingOut = false;
+                        objs[obj.connectedObjIndex].fadeInStep(0);
                     }
                 }
             }

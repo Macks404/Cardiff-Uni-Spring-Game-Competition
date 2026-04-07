@@ -73,7 +73,6 @@ Render = (objs) => {
         ctx.fillStyle = obj.Color;
         if(obj instanceof StaticObject) {
             ctx.globalAlpha = obj.opacity
-            console.log(obj)
         }
         ctx.fillRect(pos.x,pos.y,size.x,size.y);
         ctx.globalAlpha = 1;
@@ -166,23 +165,27 @@ Tick = () => {
         if(obj.fadingOut) {
             obj.fadeOutStep(deltatime);
         }
+        else if(obj.fadingIn) {
+            obj.fadeInStep(deltatime);
+        }
     })
 
     playerObject.ApplyMovement(deltatime);
 
-    let collisionObjs = []
+    let collisionObjs = [];
+    let cloneObj = undefined;
     collisionObjs.push(...mapObjects)
     recordedMovements.forEach(movement => {
         if(movement.object != undefined && movement.isReplaying) {
             collisionObjs.push(movement.object)
+            cloneObj = movement.object;
         }
     })
 
     collisionObjs.push(...movingPlatformObjects)
     collisionObjs.push(...pressurePlateObjects)
     collisionObjs.push(finishObject)
-    playerObject.collidedObjects = playerObject.GetCollision(collisionObjs,recordingMovement,replayingMovement);
-
+    playerObject.collidedObjects = playerObject.GetCollision(collisionObjs,recordingMovement,replayingMovement,cloneObj);
     playerObject.ReadjustPos(mapObjects)
 
     if(recordingMovement) {
@@ -323,7 +326,7 @@ Level1 = {
     [],
     "platformObjs":
     [],
-    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 3),
+    "finishObj": new FinishObject(900, 100, 60, 100, "#A0B2A6", 0),
     "playerObj": new Player(10, 400, 40, 40, "#A0B2A6", 90, 125),
     "tipText": "Press {W} to jump.",
 };
@@ -366,19 +369,27 @@ Level4 = {
     new StaticObject(600,250,100,250, "#493843"),
     new StaticObject(650,100,150,100, "#493843"),
     new KillingObject(650,75,150,25),
-    new StaticObject(900,250,50,250, "#493843"),
-    new KillingObject(700,475,200,25),
+    new StaticObject(675,200,25,50, "#383a49"),
+    new StaticObject(950,100,50,50, "#493843"),
+    new StaticObject(800,150,200,50,"#493843"),
+    new StaticObject(0,300,50,50, "#493843"),
+    new StaticObject(500,0,25,150,"#383a49"),
+    new StaticObject(700,325,300,200,"#493843"),
+    new StaticObject(450,200,50,50, "#493843")
     ],
     "pressurePlates":
-    [new PressurePlate(500,125,100,25,"#0e76006b",3)],
+    [new PressurePlate(0,275,50,25,"#0e76006b",10),
+    new PressurePlate(950,75,100,25,"#0e76006b",6)
+    ],
     "platformObjs":
-    [new MovingPlatform(125,300,100,25,"#493843",[125,275],1)],
-    "finishObj": new FinishObject(900, 400, 60, 100, "#A0B2A6", 0),
-    "playerObj": new Player(610, 40, 40, 40, "#A0B2A6", 90, 125),
-    "tipText": "Press {W} to jump.",
+    [new MovingPlatform(125,250,100,25,"#493843",[125,275],1),
+    new MovingPlatform(800,100,50,25,"#493843",[825,875],1)],
+    "finishObj": new FinishObject(900, 225, 60, 100, "#A0B2A6", 3),
+    "playerObj": new Player(25, 40, 40, 40, "#A0B2A6", 90, 125),
+    "tipText": "Doors can be opened by you or your clone standing on pressure plates.",
 }
 
-const levels = [Level4,Level1,Level2,Level3]
+const levels = [Level1,Level2,Level3,Level4]
 
 let recordedMovements = [];
 
