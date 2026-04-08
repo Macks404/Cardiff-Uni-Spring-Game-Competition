@@ -95,6 +95,9 @@ Tick = () => {
 
     if(finishObject.level != currentLevel) {
         currentLevel += 1;
+        if(currentLevel == levels.length) {
+            document.getElementById("level").innerText = "Game Complete!"
+        }
         LoadNextLevel();
     }
     if(playerObject.dead) LoadNextLevel();
