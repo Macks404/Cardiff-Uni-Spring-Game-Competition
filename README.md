@@ -1,1 +1,1 @@
-Submission for 2026 Cardiff University spring game jam
+Submission for 2026 Cardiff University spring game jam by Max Jelley
