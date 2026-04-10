@@ -74,7 +74,7 @@ Render = (objs) => {
         if(obj instanceof StaticObject) {
             ctx.globalAlpha = obj.opacity
         }
-        else if((obj instanceof MovingPlatform || obj instanceof Player) && levelChanging) {
+        else if((obj instanceof MovingPlatform || obj instanceof Player || obj instanceof PressurePlate) && levelChanging) {
             ctx.globalAlpha = 0
         }
         ctx.fillRect(pos.x,pos.y,size.x,size.y);
@@ -172,6 +172,7 @@ Tick = () => {
     objs = [...mapObjects]
     objs.push(finishObject)
     objs.push(...oldLevelObjects)
+    let offset = 0
     objs.forEach(obj => {
         if(obj.fadingOut) {
             obj.fadeOutStep(deltatime);
@@ -182,10 +183,13 @@ Tick = () => {
 
         if(levelChanging && obj.Color != "black" && ticks > 1) {            
             obj.pos.x -= 2250*deltatime
-            obj.pos.x = Math.round(obj.pos.x)
             if(obj instanceof FinishObject && !oldLevelObjects.includes(obj)){
-                if(levels[currentLevel].finishObj.Pos.x > obj.pos.x) {                    
+                if(levels[currentLevel].finishObj.Pos.x > obj.pos.x) {          
+                    offset = levels[currentLevel].finishObj.pos.x - obj.pos.x
                     levelChanging = false
+                    objs.forEach(obj => {
+                        if(!oldLevelObjects.includes(obj) && obj.Color != "black") obj.pos.x += offset
+                    })
                 }
             }        
         }
@@ -310,7 +314,7 @@ LoadNextLevel = () => {
     );
     pressurePlateObjects = lvl.pressurePlates.map(obj =>
         new PressurePlate(
-            obj.Pos.x+1000*levelChanging,
+            obj.Pos.x,
             obj.Pos.y,
             obj.Size.x,
             obj.Size.y,
