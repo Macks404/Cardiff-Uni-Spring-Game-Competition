@@ -182,6 +182,7 @@ Tick = () => {
 
         if(levelChanging && obj.Color != "black" && ticks > 1) {            
             obj.pos.x -= 2250*deltatime
+            obj.pos.x = Math.round(obj.pos.x)
             if(obj instanceof FinishObject && !oldLevelObjects.includes(obj)){
                 if(levels[currentLevel].finishObj.Pos.x > obj.pos.x) {                    
                     levelChanging = false
