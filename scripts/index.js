@@ -74,6 +74,9 @@ Render = (objs) => {
         if(obj instanceof StaticObject) {
             ctx.globalAlpha = obj.opacity
         }
+        else if((obj instanceof MovingPlatform || obj instanceof Player) && levelChanging) {
+            ctx.globalAlpha = 0
+        }
         ctx.fillRect(pos.x,pos.y,size.x,size.y);
         ctx.globalAlpha = 1;
     });
@@ -82,6 +85,8 @@ Render = (objs) => {
 let jumpedThisHold = false;
 let currentLevel = 0;
 let currentRecordedMovementsIndex = -1;
+let levelChanging = false;
+let oldLevelObjects = []
 let lastFrame = 0;
 let deltatime = 0;
 let ticks = 0;
@@ -164,16 +169,28 @@ Tick = () => {
         playerObject.pos.x += playerObject.platformObj.velocity*playerObject.platformObj.speed*deltatime;
     }
 
-    mapObjects.forEach(obj => {
+    objs = [...mapObjects]
+    objs.push(finishObject)
+    objs.push(...oldLevelObjects)
+    objs.forEach(obj => {
         if(obj.fadingOut) {
             obj.fadeOutStep(deltatime);
         }
         else if(obj.fadingIn) {
             obj.fadeInStep(deltatime);
         }
+
+        if(levelChanging && obj.Color != "black" && ticks > 1) {            
+            obj.pos.x -= 2250*deltatime
+            if(obj instanceof FinishObject && !oldLevelObjects.includes(obj)){
+                if(levels[currentLevel].finishObj.Pos.x > obj.pos.x) {                    
+                    levelChanging = false
+                }
+            }        
+        }
     })
 
-    playerObject.ApplyMovement(deltatime);
+    if(!levelChanging) playerObject.ApplyMovement(deltatime);
 
     let collisionObjs = [];
     let cloneObj = undefined;
@@ -219,6 +236,8 @@ Tick = () => {
     Render(movingPlatformObjects)
     // Render pressure plates
     Render(pressurePlateObjects)
+    // Render old map for transition
+    if(levelChanging) Render(oldLevelObjects)
 
     // Render player clones
     recordedMovements.forEach(movement => {
@@ -233,13 +252,20 @@ Tick = () => {
 }
 
 LoadNextLevel = () => {
+    if(currentLevel != 0) {
+        levelChanging = true
+        oldLevelObjects = [...mapObjects]
+        oldLevelObjects.push(finishObject)
+    }
+    
     document.getElementById("recordingMovement").innerText = "Press Space To Record Movement"
     currentRecordedMovementsIndex = -1;
     const lvl = levels[currentLevel];
+
     // load map objects
     mapObjects = lvl.mapObjs.map(obj =>
         new obj.constructor(
-            obj.Pos.x, 
+            obj.Pos.x+1000*levelChanging, 
             obj.Pos.y, 
             obj.Size.x, 
             obj.Size.y, 
@@ -248,13 +274,13 @@ LoadNextLevel = () => {
         )
     );
     // create map borders
-    mapObjects.push(new StaticObject(0,500,1000,100, "#493843"));
-    mapObjects.push(new StaticObject(0,-100,1000,100, "#493843"));
-    mapObjects.push(new StaticObject(-100,0,100,500, "#493843"));
-    mapObjects.push(new StaticObject(1000,0,100,500, "#493843"));
+    mapObjects.push(new StaticObject(0,500,1000,100, "black"));
+    mapObjects.push(new StaticObject(0,-100,1000,100, "black"));
+    mapObjects.push(new StaticObject(-100,0,100,500, "black"));
+    mapObjects.push(new StaticObject(1000,0,100,500, "black"));
 
     finishObject = new FinishObject(
-        lvl.finishObj.Pos.x,
+        lvl.finishObj.Pos.x+1000*levelChanging,
         lvl.finishObj.Pos.y,
         lvl.finishObj.Size.x,
         lvl.finishObj.Size.y,
@@ -283,7 +309,7 @@ LoadNextLevel = () => {
     );
     pressurePlateObjects = lvl.pressurePlates.map(obj =>
         new PressurePlate(
-            obj.Pos.x,
+            obj.Pos.x+1000*levelChanging,
             obj.Pos.y,
             obj.Size.x,
             obj.Size.y,
@@ -321,10 +347,10 @@ let playerObject = undefined;
 
 Level1 = {
     "mapObjs": 
-    [new StaticObject(0,450,225,50, "#493843"),
+    [new StaticObject(-20,450,245,50, "#493843"),
     new StaticObject(275,375,200,50, "#493843"),
     new StaticObject(525,275,200,50, "#493843"),
-    new StaticObject(775,200,225,50, "#493843")],
+    new StaticObject(775,200,250,50, "#493843")],
     "pressurePlates":
     [],
     "platformObjs":
@@ -335,10 +361,10 @@ Level1 = {
 };
 Level2 = {
     "mapObjs": 
-    [new StaticObject(250,375,750,125, "#493843"),
+    [new StaticObject(250,375,770,125, "#493843"),
     new StaticObject(400,200,150,175, "#493843"),
     new StaticObject(625,200,150,50, "#493843"),
-    new StaticObject(850,200,150,175, "#493843"),
+    new StaticObject(850,200,170,175, "#493843"),
     new KillingObject(550,350,300,25)],
     "pressurePlates":
     [],
@@ -351,10 +377,10 @@ Level2 = {
 Level3 = {
     "mapObjs": 
     [new KillingObject(150,475,350,25),
-    new StaticObject(0,350,150,150, "#493843"),
-    new StaticObject(500,350,500,300, "#493843"),
+    new StaticObject(-20,350,170,150, "#493843"),
+    new StaticObject(500,350,520,300, "#493843"),
     new StaticObject(500,300,100,50, "#493843"),
-    new StaticObject(900,200,100,150, "#493843"),
+    new StaticObject(900,200,120,150, "#493843"),
     new KillingObject(600,325,300,25)],
     "pressurePlates":
     [],
@@ -373,11 +399,11 @@ Level4 = {
     new StaticObject(650,100,150,100, "#493843"),
     new KillingObject(650,75,150,25),
     new StaticObject(675,200,25,50, "#383a49"),
-    new StaticObject(950,100,50,50, "#493843"),
-    new StaticObject(800,150,200,50,"#493843"),
+    new StaticObject(950,100,70,50, "#493843"),
+    new StaticObject(800,150,220,50,"#493843"),
     new StaticObject(0,300,50,50, "#493843"),
     new StaticObject(500,0,25,150,"#383a49"),
-    new StaticObject(700,325,300,200,"#493843"),
+    new StaticObject(700,325,320,200,"#493843"),
     new StaticObject(450,200,50,50, "#493843")
     ],
     "pressurePlates":
